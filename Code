@@ -1,0 +1,220 @@
+#include <bits/stdc++.h>
+using namespace std;
+#define M 1000000007
+#define pb push_back
+#define ll long long int
+class range{
+    public:
+    int l,r;
+};
+class node{
+    public:
+    vector <range > vvv; 
+    node(){};
+};
+class Graph{
+    public:
+    int n;
+    Graph(int nn){
+        n=nn;
+    }
+    node * vlist[1000000];
+    
+    vector <int > adjlist[1000000];
+    
+    int incomingdeg[1000000]={0};
+    
+    bool visited[1000000];
+    bool vrv[1000000];
+    
+    vector <int > reverse_dfs_vec;
+    void addedge(int a,int b){
+        incomingdeg[b]++;
+        adjlist[a].pb(b);
+    }
+    void initialize(){
+        for(int i=0;i<1000000;i++){
+            visited[i]=false;
+        }
+    }
+    void pinitialize(){
+        for(int i=0;i<1000000;i++){
+            vrv[i]=false;
+        }
+    }
+    void printnode(int x){
+        cout<<x<<";";
+        for(range rr:vlist[x]->vvv){
+            cout<<rr.l<<" "<<rr.r<<";";
+        }
+        cout<<"\n";
+    }
+    void print(){
+        for(int i=1;i<=n;i++){
+            printnode(i);
+        }
+    }
+    
+    vector <int > vec;
+    long long int t=0;
+    int a_dp [1000000]={0};
+    
+    int _dfs(int x){
+        
+        node *p=new node;
+        vlist[x]=p;
+        visited[x]=true;
+        
+        int sum=0;bool flag=false,flag2=false;
+        for(int i=0;i<adjlist[x].size();i++){
+            if(!visited[adjlist[x][i]]){
+                a_dp[adjlist[x][i]]=_dfs(adjlist[x][i]);
+            }
+            if(a_dp[adjlist[x][i]]==0){
+                flag2=true;
+            }
+            sum+=a_dp[adjlist[x][i]];
+        }
+        a_dp[x]=sum;
+        if(a_dp[x]==0&&incomingdeg[x]>1)vrv[x]=true;
+        if((adjlist[x].size()==0||flag2)&&(sum!=0||incomingdeg[x]>1)){
+            vec.pb(x);
+            a_dp[x]+=1;
+        }
+        return a_dp[x];
+    }
+    void _dfs2(int x){
+        t++;
+        range rr;
+        visited[x]=true;
+        rr.l=t;
+        for(int i=0;i<adjlist[x].size();i++){
+            _dfs2(adjlist[x][i]);
+        }
+        t++;
+        rr.r=t;
+        vlist[x]->vvv.pb(rr);
+    }
+    void _process_vec(){
+        for(int i=0;i<vec.size();i++){
+            if(vrv[vec[i]]){
+                _dfs2(vec[i]);
+            }
+            else{
+                for(int j=0;j<adjlist[vec[i]].size();j++){
+                    if(!a_dp[adjlist[vec[i]][j]])_dfs2(adjlist[vec[i]][j]);
+                }
+            }
+        }
+    }
+    struct compare{
+        bool operator()(const range& a,const range& b)const{
+        if(a.l==b.l){
+            return a.r<b.r;
+        }
+        return a.l<b.l;
+    }
+    };
+    void merge(set<range,compare>& k,int b){
+        for(range a:vlist[b]->vvv){
+            k.insert(a);
+        }
+    }
+    bool interection(vector<range> &a,range x){
+        if(a[a.size()-1].r<x.l-1){return false;}
+        a[a.size()-1].r=max(a[a.size()-1].r,x.r);
+        return true;
+    }
+    void merge_dfs(int x){
+        visited[x]=true;
+        set <range,compare> k;
+        for(int i=0;i<adjlist[x].size();i++){
+            if(!visited[adjlist[x][i]]){
+                merge_dfs(adjlist[x][i]);
+            }
+            if(vlist[adjlist[x][i]]->vvv.size())merge(k,adjlist[x][i]);
+        }
+        for(range a:k){
+            if(vlist[x]->vvv.size()){
+                if(!interection(vlist[x]->vvv,a)){
+                    vlist[x]->vvv.push_back(a);
+                }
+            }
+            else{
+                vlist[x]->vvv.push_back(a);
+            }
+        }
+    }
+    void prep(){
+            initialize();
+            pinitialize();
+            _dfs(1);
+            initialize();
+            cout<<vec.size()<<": ";
+            for(int i:vec){
+                cout<<i<<" ";
+            }
+            cout<<"\n";
+            _process_vec();
+            initialize();
+            merge_dfs(1);
+    }
+    bool checkint(range r1,range r2){
+        return r1.r>r2.l;
+    }   
+    bool check_intersection(int a,int b){
+        int i=0,j=0,m=vlist[a]->vvv.size(),n=vlist[b]->vvv.size();
+        while(i<m&&j<n){
+            while(vlist[a]->vvv[i].l>vlist[b]->vvv[j].r){
+                i++;
+                if(i>=m)return false;
+            }
+            if(checkint(vlist[a]->vvv[i],vlist[b]->vvv[j]))return true;
+            while(vlist[b]->vvv[j].l>vlist[a]->vvv[i].r){
+                j++;
+                if(j>=n)return false;
+            }
+            if(checkint(vlist[b]->vvv[j],vlist[a]->vvv[i]))return true;
+        }
+        return false;
+    }  
+};
+int main()
+{
+    int n,m,q;
+    cin>>n>>m>>q;
+    Graph g = Graph(n);
+    int x,y;
+    for(int i=0;i<m;i++){
+        cin>>x>>y;
+        g.addedge(x,y);
+    }
+    g.prep();
+    g.print();
+    int xx,yy;
+    while(q--){
+        cin>>xx>>yy;
+        if(g.check_intersection(xx,yy))cout<<"YES\n";
+        else{cout<<"NO\n";}
+    }
+}
+/*
+test-case:
+12 13 1
+
+1 2
+1 4
+1 3
+2 5
+2 12
+4 7
+4 11
+12 9
+12 10
+7 10
+11 8
+9 6
+10 6
+
+4 5
+*/
